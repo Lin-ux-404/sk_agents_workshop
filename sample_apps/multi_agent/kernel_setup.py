@@ -92,38 +92,26 @@ async def initialize_chat():
 
 async def process_image_and_get_responses(chat, image_bytes):
     try:
-        # Create the image content
-        image_content = ImageContent(
-            data=image_bytes,
-        )
-        print(f"Image content type: {type(image_content.data)} {image_content.data}")
-
-        # Create chat message with proper structure
+        print(image_bytes)
         analyze_message = ChatMessageContent(
             role=AuthorRole.USER,
             content="Please analyze this image",
-            metadata={"image_data":image_content.data} 
+            items=[ImageContent(uri=image_bytes)],
+            metadata={"image_data": image_bytes}
         )
+        
 
-        print(f"MESSAGE TYPE: {type(analyze_message)}")
-        print(f"MESSAGE INNER CONTENT: {type(analyze_message.metadata['image_data'])}")
-
-        # Display initial message in Streamlit 
         with st.chat_message("user"):
-            st.write("Analyzing your image...")
+            st.write("Find listings of the object in the image:")
             st.image(image_bytes)
 
         # Add message to chat history
-        chat.history.add_message(analyze_message)  
-        print(f"Chat history after adding message: {chat.history}")
+        await chat.add_chat_message(analyze_message)  
 
-
-        # Invoke chat with proper image content
         async for response in chat.invoke():
             if response.role != "tool":
                 # Handle string or dict content types
                 content = response.content
-                print(f"Response type: {type(response)}")
                 if not isinstance(content, str):
                     content = content.get("text", str(content))
 
@@ -139,4 +127,3 @@ async def process_image_and_get_responses(chat, image_bytes):
     except Exception as e:
         st.error(f"Error processing image: {str(e)}")
         print(f"Detailed error in process_image_and_get_responses: {str(e)}")
-        # Don't re-raise to allow graceful error handling
