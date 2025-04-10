@@ -235,25 +235,27 @@ async def initialize_chat():
 
     selection_function = KernelFunctionFromPrompt(
         function_name="selection",
-        prompt=f"""
-        Determine which participant takes the next turn in a conversation based on the most recent participant.
-        State only the name of the participant to take the next turn.
+        prompt="""
+        Determine which participant takes the next turn in a conversation based on the most recent messages.
+        State only the name of the participant to take the next turn. Be extremely strict about the rules.
+        Return EXACTLY ONE of these two names with no additional text: ImageAnalyzerAgent or ProductSearchAgent
+
+        An Agent CANNOT take more than one turn in a row.
         No participant should take more than one turn in a row.
 
         Choose only from these participants:
-        - {ANALYZER_NAME}
-        - {SEARCHER_NAME}
+        - ImageAnalyzerAgent: Analyzes images and provides descriptions
+        - ProductSearchAgent: Searches for products based on image analysis
 
         Always follow these rules when selecting the next participant:
-        - After user input, it is {ANALYZER_NAME}'s turn to extract the image from the user's message and analyze it.
-        - After {ANALYZER_NAME} describes the image, it is {SEARCHER_NAME}'s turn to search for products.
-        - After {SEARCHER_NAME} provides product options, end the conversation.
+        1. After a user inputs an image, ImageAnalyzerAgent MUST analyze it first and gives a response with the analysis.
+        2. After ImageAnalyzerAgent respondes, ProductSearchAgent MUST search for products and list the available options.
+        3. After ProductSearchAgent provides product options, end the conversation.
         
         History:
         {{$history}}
         """
-    )
-    print("sddds")
+    )   
     # Create the group chat with updated selection strategy
     chat = AgentGroupChat(
         agents=[search_agent, image_agent],
@@ -269,7 +271,7 @@ async def initialize_chat():
             agent_variable_name="agents",
             history_variable_name="history"
         ),
-        termination_strategy=DefaultTerminationStrategy(maximum_iterations=4)
+        termination_strategy=DefaultTerminationStrategy(maximum_iterations=2)
     )
     
     # Initialize empty chat history
